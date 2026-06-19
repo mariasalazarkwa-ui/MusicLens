@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'https://musiclens-production-2d7b.up.railway.app';
 let win;
 
 function getUserDataPath() {
