@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MusicLens</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: transparent;
+      -webkit-app-region: drag;
+      font-family: 'Share Tech Mono', monospace;
+      color: #e8e8e8;
+      user-select: none;
+    }
+
+    .widget {
+      width: 340px;
+      background: rgba(10, 10, 10, 0.92);
+      border: 1px solid #ff2d2d;
+      border-radius: 2px;
+      padding: 10px 12px;
+      position: relative;
+      backdrop-filter: blur(8px);
+    }
+
+    .widget::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #ff2d2d, #ff7a00, #ff2d2d);
+      background-size: 200% 100%;
+      animation: stripe 3s linear infinite;
+    }
+
+    @keyframes stripe {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 200% 0%; }
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 8px; }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px;
+      color: #ff2d2d;
+      letter-spacing: 2px;
+    }
+
+    .user-label {
+      font-size: 9px;
+      color: #555;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .icon-btn {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 3px;
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: 1px;
+    }
+    .icon-btn:hover { color: #ff2d2d; }
+
+    /* USER PICKER */
+    .user-picker {
+      padding: 8px 0 4px;
+    }
+    .user-picker-label {
+      font-size: 10px;
+      color: #555;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .user-chips { margin-bottom: 8px; }
+    .user-chip {
+      display: inline-block;
+      border: 1px solid #333;
+      color: #666;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      padding: 2px 8px;
+      margin: 0 4px 4px 0;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+    .user-chip:hover { border-color: #ff2d2d; color: #ff2d2d; }
+
+    .user-input-row {
+      display: flex;
+      gap: 6px;
+      -webkit-app-region: no-drag;
+    }
+    .user-input {
+      flex: 1;
+      background: #111;
+      border: 1px solid #333;
+      color: #e8e8e8;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      padding: 4px 8px;
+      outline: none;
+    }
+    .user-input:focus { border-color: #ff2d2d; }
+    .go-btn {
+      background: none;
+      border: 1px solid #ff2d2d;
+      color: #ff2d2d;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      padding: 4px 10px;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+    .go-btn:hover { background: #ff2d2d; color: #000; }
+
+    /* NOW PLAYING */
+    .now-playing {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .album-art {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border: 1px solid #333;
+      flex-shrink: 0;
+      background: #1a1a1a;
+    }
+
+    .track-info { flex: 1; min-width: 0; }
+
+    .track-name {
+      font-size: 13px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: bold;
+    }
+
+    .artist-name {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .progress-bar {
+      margin-top: 6px;
+      height: 2px;
+      background: #222;
+      border-radius: 1px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #ff2d2d;
+      transition: width 1s linear;
+    }
+
+    .insight-btn {
+      -webkit-app-region: no-drag;
+      margin-top: 8px;
+      background: none;
+      border: 1px solid #ff2d2d;
+      color: #ff2d2d;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      width: 100%;
+    }
+    .insight-btn:hover { background: #ff2d2d; color: #000; }
+
+    .insight-text {
+      margin-top: 6px;
+      font-size: 10px;
+      color: #aaa;
+      line-height: 1.5;
+      max-height: 56px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #ff2d2d #111;
+    }
+
+    .idle {
+      font-size: 11px;
+      color: #444;
+      text-align: center;
+      padding: 14px 0;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget">
+    <div class="header">
+      <div class="header-left">
+        <span class="logo">MUSICLENS</span>
+        <span class="user-label" id="userLabel"></span>
+      </div>
+      <div style="-webkit-app-region:no-drag;display:flex;gap:4px;">
+        <button class="icon-btn" id="switchBtn" onclick="showPicker()" title="Switch user">↺</button>
+        <button class="icon-btn" onclick="window.musiclens.close()">✕</button>
+      </div>
+    </div>
+
+    <!-- User picker (shown when no user set) -->
+    <div class="user-picker" id="userPicker" style="display:none">
+      <div class="user-picker-label">who are you?</div>
+      <div class="user-input-row">
+        <input class="user-input" id="nameInput" type="text" placeholder="your name..." autocomplete="off" />
+        <button class="go-btn" onclick="confirmUser()">GO</button>
+      </div>
+    </div>
+
+    <!-- Now playing -->
+    <div id="content" style="display:none">
+      <div id="nowPlaying"><div class="idle">// NO SIGNAL //</div></div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    window.musiclens.onInitUser((user) => {
+      if (user) {
+        setActiveUser(user);
+      } else {
+        showPicker();
+      }
+    });
+
+    window.musiclens.onNowPlaying((data) => {
+      renderTrack(data);
+    });
+
+    function showPicker() {
+      document.getElementById('userPicker').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('nameInput').focus();
+    }
+
+    function confirmUser() {
+      const val = document.getElementById('nameInput').value.trim().toLowerCase();
+      if (!val) return;
+      setActiveUser(val);
+      window.musiclens.setUser(val);
+    }
+
+    function setActiveUser(user) {
+      currentUser = user;
+      document.getElementById('userLabel').textContent = user;
+      document.getElementById('userPicker').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && document.getElementById('userPicker').style.display !== 'none') {
+        confirmUser();
+      }
+    });
+
+    function renderTrack(data) {
+      const el = document.getElementById('nowPlaying');
+      if (!data || !data.playing) {
+        el.innerHTML = '<div class="idle">// PAUSED //</div>';
+        return;
+      }
+      const progress = data.duration_ms ? (data.progress_ms / data.duration_ms) * 100 : 0;
+      el.innerHTML = `
+        <div class="now-playing">
+          <img class="album-art" src="${esc(data.album_art || '')}" alt="" />
+          <div class="track-info">
+            <div class="track-name">${esc(data.track)}</div>
+            <div class="artist-name">${esc(data.artist)}</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${progress.toFixed(1)}%"></div>
+            </div>
+          </div>
+        </div>
+        <button class="insight-btn" id="insightBtn">GET LENS</button>
+        <div class="insight-text" id="insightText"></div>
+      `;
+      document.getElementById('insightBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('insightBtn');
+        const insightEl = document.getElementById('insightText');
+        btn.textContent = 'SCANNING...';
+        btn.disabled = true;
+        const result = await window.musiclens.fetchInsight({
+          user: currentUser,
+          track: data.track,
+          artist: data.artist,
+          album: data.album,
+        });
+        insightEl.textContent = result.insight || result.error || 'No signal.';
+        btn.textContent = 'REFRESH';
+        btn.disabled = false;
+      });
+    }
+
+    function esc(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escAttr(str) {
+      return String(str || '').replace(/'/g, "\\'");
+    }
+  </script>
+</body>
+</html>
