@@ -72,12 +72,12 @@ app.get('/recent', (req, res) => {
 
 // --- AI Insight ---
 app.post('/insight', async (req, res) => {
-  const { track, artist, album, context } = req.body;
+  const { track, artist, album, mode } = req.body;
   if (!track || !artist) return res.status(400).json({ error: 'track and artist required' });
   const user = req.body.user?.trim() || 'anonymous';
   try {
-    const insight = await getTrackInsight({ track, artist, album, context });
-    db.saveInsight(user, { track, artist, insight });
+    const insight = await getTrackInsight({ track, artist, album, mode });
+    db.saveInsight(user, { track, artist, insight, mode });
     res.json({ insight });
   } catch (err) {
     res.status(500).json({ error: err.message });
