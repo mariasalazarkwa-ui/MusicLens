@@ -2,7 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 const { getCurrentTrack, getRecentTracks, getSpotifyAuthUrl, exchangeCode, refreshToken } = require('./spotify');
-const { getTrackInsight } = require('./anthropic');
+const { getTrackInsight, getArtistProfile } = require('./anthropic');
 const { recognizeSong } = require('./audd');
 const db = require('./db');
 
@@ -97,6 +97,18 @@ app.post('/recognize', async (req, res) => {
   try {
     const result = await recognizeSong({ audio_url, audio_data });
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Artist Profile ---
+app.get('/artist', async (req, res) => {
+  const { artist, track, album } = req.query;
+  if (!artist) return res.status(400).json({ error: 'artist required' });
+  try {
+    const profile = await getArtistProfile({ artist, track, album });
+    res.json({ profile });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
