@@ -2,14 +2,18 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+function stripMarkdown(text) {
+  return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+}
+
 async function getTrackInsight({ track, artist, album, mode }) {
-  const systemPrompt = `You are Brit FM — a music guide who genuinely knows their stuff. You grew up in London, you've listened to everything, and you talk like a person not a publication. Knowledgeable, straight, occasionally dry. No hyperbole, no trying too hard, no forced attitude.`;
+  const systemPrompt = `You are Brit FM — someone in their mid-20s from London who's genuinely obsessed with music. You've gone deep on the history, you know your stuff, but you talk about it like you're telling a mate something interesting — not writing a review. Warm, direct, a bit enthusiastic when something's worth it. Plain sentences, no markdown formatting.`;
 
   let userPrompt;
   if (mode === 'more') {
-    userPrompt = `Tell me more about ${artist}. What scene were they part of, who shaped them, who have they shaped in turn? What was going on culturally when "${track}" came out? Draw the bigger picture — lineage, context, legacy. Under 130 words.`;
+    userPrompt = `Tell me more about ${artist} — what scene were they part of, who shaped them, who have they shaped? What was going on when "${track}" came out, culturally? Give me the bigger picture — lineage, context, what it all means. Under 130 words.`;
   } else {
-    userPrompt = `Who is ${artist}? Give me the real story — where they're from, roughly what year they started out, who their main inspirations and influences were, and what makes their sound distinct. Only bring up "${track}"${album ? ` or "${album}"` : ''} if it genuinely matters to understanding them. Under 110 words.`;
+    userPrompt = `Who is ${artist}? Tell me where they're from, roughly when they started, who their main influences were, and what makes their sound theirs. Only bring up "${track}"${album ? ` or "${album}"` : ''} if it actually helps explain them. Under 110 words.`;
   }
 
   const message = await client.messages.create({
@@ -19,16 +23,16 @@ async function getTrackInsight({ track, artist, album, mode }) {
     system: systemPrompt,
   });
 
-  return message.content[0].text;
+  return stripMarkdown(message.content[0].text);
 }
 
 async function getArtistProfile({ artist, track, album }) {
-  const systemPrompt = `You are Brit FM — a music writer who knows their history and has strong opinions. You write like someone who genuinely loves music, not someone performing expertise. Clear, direct, specific. A little dry is fine. No hype, no PR speak.`;
+  const systemPrompt = `You are Brit FM — someone in their mid-20s from London who loves music and knows the history inside out. You write about it like you'd explain it to a friend who's curious — enthusiastic, knowledgeable, but not showing off. Direct and warm. No markdown formatting, no bullet points, just plain prose.`;
 
   const userPrompt = `Write an artist profile for ${artist}.
 Current track: "${track}"${album ? ` from "${album}"` : ''}.
 
-Write exactly four sections with these headers on their own line. Each section is 70-90 words of clear, informed prose.
+Write exactly four sections with these headers on their own line. Each section is 70-90 words of natural, clear prose.
 
 WHO THEY ARE
 (origin, when they started, what makes them matter, who they are as an act)
@@ -49,7 +53,7 @@ RELEVANCE NOW
     system: systemPrompt,
   });
 
-  return message.content[0].text;
+  return stripMarkdown(message.content[0].text);
 }
 
 module.exports = { getTrackInsight, getArtistProfile };

@@ -8,22 +8,32 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       background: transparent;
-      -webkit-app-region: drag;
       font-family: 'Share Tech Mono', monospace;
       color: #e8e8e8;
       user-select: none;
+      display: flex;
+      flex-direction: column;
+      -webkit-app-region: no-drag;
     }
 
     .widget {
       width: 340px;
+      height: 100%;
       background: rgba(10, 10, 10, 0.92);
       border: 1px solid #ff2d2d;
       border-radius: 2px;
-      padding: 10px 12px;
       position: relative;
       backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .widget::before {
@@ -45,7 +55,18 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      padding: 10px 12px 8px;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+
+    .scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0 12px 12px;
+      scrollbar-width: thin;
+      scrollbar-color: #333 transparent;
     }
 
     .header-left { display: flex; align-items: center; gap: 8px; }
@@ -144,27 +165,36 @@
       border: 1px solid #333;
       flex-shrink: 0;
       background: #1a1a1a;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
     }
-
-    .track-info { flex: 1; min-width: 0; }
+    .album-art:hover { border-color: #ff2d2d; opacity: 0.85; }
 
     .track-name {
-      font-size: 13px;
+      font-size: 21px;
       color: #fff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       font-weight: bold;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
     }
+    .track-name:hover { color: #ff2d2d; }
+
+    .track-info { flex: 1; min-width: 0; }
 
     .artist-name {
-      font-size: 11px;
+      font-size: 17px;
       color: #888;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       margin-top: 2px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
     }
+    .artist-name:hover { color: #ff2d2d; }
 
     .progress-bar {
       margin-top: 6px;
@@ -186,24 +216,47 @@
       border: 1px solid #ff2d2d;
       color: #ff2d2d;
       font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
+      font-size: 15px;
       letter-spacing: 1px;
-      padding: 3px 8px;
+      padding: 5px 8px;
       cursor: pointer;
       text-transform: uppercase;
       width: 100%;
     }
     .insight-btn:hover { background: #ff2d2d; color: #000; }
+    .insight-btn:disabled { opacity: 0.5; cursor: default; }
 
     .insight-text {
-      margin-top: 6px;
-      font-size: 10px;
+      margin-top: 8px;
+      font-size: 15px;
       color: #aaa;
-      line-height: 1.5;
-      max-height: 56px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #ff2d2d #111;
+      line-height: 1.6;
+    }
+
+    .more-btn {
+      -webkit-app-region: no-drag;
+      margin-top: 8px;
+      background: none;
+      border: 1px solid #444;
+      color: #555;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 1px;
+      padding: 4px 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      width: 100%;
+    }
+    .more-btn:hover { border-color: #ff7a00; color: #ff7a00; }
+    .more-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .more-text {
+      margin-top: 6px;
+      font-size: 15px;
+      color: #888;
+      line-height: 1.6;
+      border-left: 2px solid #333;
+      padding-left: 6px;
     }
 
     .idle {
@@ -219,7 +272,7 @@
   <div class="widget">
     <div class="header">
       <div class="header-left">
-        <span class="logo">MUSICLENS</span>
+        <span class="logo">BRIT FM</span>
         <span class="user-label" id="userLabel"></span>
       </div>
       <div style="-webkit-app-region:no-drag;display:flex;gap:4px;">
@@ -228,30 +281,35 @@
       </div>
     </div>
 
-    <!-- User picker (shown when no user set) -->
-    <div class="user-picker" id="userPicker" style="display:none">
-      <div class="user-picker-label">who are you?</div>
-      <div class="user-input-row">
-        <input class="user-input" id="nameInput" type="text" placeholder="your name..." autocomplete="off" />
-        <button class="go-btn" onclick="confirmUser()">GO</button>
+    <div class="scroll-body">
+      <div class="user-picker" id="userPicker" style="display:none">
+        <div class="user-picker-label">who are you?</div>
+        <div class="user-input-row">
+          <input class="user-input" id="nameInput" type="text" placeholder="your name..." autocomplete="off" />
+          <button class="go-btn" onclick="confirmUser()">GO</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Now playing -->
-    <div id="content" style="display:none">
-      <div id="nowPlaying"><div class="idle">// NO SIGNAL //</div></div>
+      <div id="content" style="display:none">
+        <div id="nowPlaying"><div class="idle">// NO SIGNAL //</div></div>
+      </div>
     </div>
   </div>
 
   <script>
+    const COMPACT_HEIGHT  = 160;
+    const EXPANDED_HEIGHT = 340;
+
     let currentUser = null;
+    let currentInsightTrack = null;
+    let artistInsight = null;
+    let moreInsight = null;
+    let pending = null;
+    let expanded = false;
 
     window.musiclens.onInitUser((user) => {
-      if (user) {
-        setActiveUser(user);
-      } else {
-        showPicker();
-      }
+      if (user) setActiveUser(user);
+      else showPicker();
     });
 
     window.musiclens.onNowPlaying((data) => {
@@ -284,49 +342,92 @@
       }
     });
 
+    function collapse() {
+      expanded = false;
+      window.musiclens.resizeWidget(COMPACT_HEIGHT);
+    }
+
+    function expand() {
+      expanded = true;
+      window.musiclens.resizeWidget(EXPANDED_HEIGHT);
+    }
+
     function renderTrack(data) {
       const el = document.getElementById('nowPlaying');
       if (!data || !data.playing) {
+        artistInsight = null; moreInsight = null;
+        currentInsightTrack = null; pending = null;
+        if (expanded) collapse();
         el.innerHTML = '<div class="idle">// PAUSED //</div>';
         return;
       }
+
+      const trackKey = `${data.track}|||${data.artist}`;
+      if (trackKey !== currentInsightTrack) {
+        artistInsight = null; moreInsight = null; pending = null;
+        if (expanded) collapse();
+      }
+
       const progress = data.duration_ms ? (data.progress_ms / data.duration_ms) * 100 : 0;
+
+      const lensLabel = pending === 'artist' ? 'SCANNING...' : artistInsight ? 'REFRESH' : 'GET INFO';
+      const moreLabel = pending === 'more' ? 'SCANNING...' : moreInsight ? 'REFRESH MORE' : 'MORE';
+
       el.innerHTML = `
         <div class="now-playing">
-          <img class="album-art" src="${esc(data.album_art || '')}" alt="" />
+          <img class="album-art" id="albumArt" src="${esc(data.album_art || '')}" alt="" />
           <div class="track-info">
-            <div class="track-name">${esc(data.track)}</div>
-            <div class="artist-name">${esc(data.artist)}</div>
+            <div class="track-name" id="trackLink">${esc(data.track)}</div>
+            <div class="artist-name" id="artistLink">${esc(data.artist)}</div>
             <div class="progress-bar">
               <div class="progress-fill" style="width:${progress.toFixed(1)}%"></div>
             </div>
           </div>
         </div>
-        <button class="insight-btn" id="insightBtn">GET LENS</button>
-        <div class="insight-text" id="insightText"></div>
+        <button class="insight-btn" id="insightBtn" ${pending === 'artist' ? 'disabled' : ''}>${lensLabel}</button>
+        ${expanded && artistInsight ? `<div class="insight-text" id="insightText">${esc(artistInsight)}</div>` : ''}
+        ${expanded && artistInsight ? `<button class="more-btn" id="moreBtn" ${pending === 'more' ? 'disabled' : ''}>${moreLabel}</button>` : ''}
+        ${expanded && moreInsight ? `<div class="more-text" id="moreText">${esc(moreInsight)}</div>` : ''}
       `;
+
+      const openArtist = () => window.musiclens.openArtistPage({ artist: data.artist, track: data.track, album: data.album });
+      document.getElementById('albumArt').addEventListener('click', openArtist);
+      document.getElementById('trackLink').addEventListener('click', openArtist);
+      document.getElementById('artistLink').addEventListener('click', openArtist);
+
       document.getElementById('insightBtn').addEventListener('click', async () => {
         const btn = document.getElementById('insightBtn');
-        const insightEl = document.getElementById('insightText');
-        btn.textContent = 'SCANNING...';
-        btn.disabled = true;
+        btn.textContent = 'SCANNING...'; btn.disabled = true;
+        pending = 'artist'; currentInsightTrack = trackKey;
+
         const result = await window.musiclens.fetchInsight({
-          user: currentUser,
-          track: data.track,
-          artist: data.artist,
-          album: data.album,
+          user: currentUser, track: data.track, artist: data.artist, album: data.album, mode: 'artist'
         });
-        insightEl.textContent = result.insight || result.error || 'No signal.';
-        btn.textContent = 'REFRESH';
-        btn.disabled = false;
+        artistInsight = result.insight || result.error || 'No signal.';
+        pending = null;
+
+        if (!expanded) expand();
+        renderTrack(data);
       });
+
+      const moreBtn = document.getElementById('moreBtn');
+      if (moreBtn) {
+        moreBtn.addEventListener('click', async () => {
+          moreBtn.textContent = 'SCANNING...'; moreBtn.disabled = true;
+          pending = 'more';
+
+          const result = await window.musiclens.fetchInsight({
+            user: currentUser, track: data.track, artist: data.artist, album: data.album, mode: 'more'
+          });
+          moreInsight = result.insight || result.error || 'No signal.';
+          pending = null;
+          renderTrack(data);
+        });
+      }
     }
 
     function esc(str) {
       return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-    function escAttr(str) {
-      return String(str || '').replace(/'/g, "\\'");
     }
   </script>
 </body>
