@@ -34,6 +34,8 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #1a1a1a;
+      position: relative;
+      z-index: 10;
     }
 
     .logo {
@@ -56,21 +58,46 @@
     }
     .close-btn:hover { color: #ff2d2d; }
 
-    /* ── HERO ── */
-    .hero {
+    /* ── ARTIST IMAGE ── */
+    .artist-image-wrap {
       flex-shrink: 0;
-      padding: 28px 24px 20px;
-      border-bottom: 1px solid #111;
       position: relative;
+      height: 260px;
       overflow: hidden;
+      background: #111;
     }
 
-    .hero::before {
+    .artist-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+      display: block;
+      filter: grayscale(100%) contrast(1.2) brightness(0.75);
+    }
+
+    /* gradient fade to black at bottom */
+    .artist-image-wrap::after {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, #ff2d2d44, transparent);
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 40%,
+        rgba(10,10,10,0.6) 70%,
+        #0a0a0a 100%
+      );
+      pointer-events: none;
+    }
+
+    /* artist name overlaid on image */
+    .hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0 24px 16px;
+      z-index: 2;
     }
 
     .artist-name {
@@ -79,7 +106,7 @@
       color: #fff;
       letter-spacing: 4px;
       line-height: 1;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .track-pill {
@@ -87,7 +114,7 @@
       align-items: center;
       gap: 6px;
       font-size: 10px;
-      color: #444;
+      color: #555;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
@@ -106,6 +133,22 @@
     }
 
     .track-pill .track-name { color: #666; }
+
+    /* ── HERO (no image fallback) ── */
+    .hero {
+      flex-shrink: 0;
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid #111;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, #ff2d2d44, transparent);
+    }
 
     /* ── SCROLL CONTENT ── */
     .content {
@@ -184,14 +227,8 @@
     <button class="close-btn" id="closeBtn">✕</button>
   </div>
 
-  <div class="hero">
-    <div class="artist-name" id="artistName"></div>
-    <div class="track-pill">
-      <div class="dot"></div>
-      <span>NOW PLAYING</span>
-      <span class="track-name" id="trackName"></span>
-    </div>
-  </div>
+  <!-- Populated by JS once image URL is known -->
+  <div id="heroWrap"></div>
 
   <div class="content" id="content">
     <div class="loading">
@@ -211,13 +248,42 @@
     const track  = params.get('track')  || '';
     const album  = params.get('album')  || '';
 
-    document.getElementById('artistName').textContent = artist.toUpperCase();
-    document.getElementById('trackName').textContent  = track + (album ? ` — ${album}` : '');
-
     document.getElementById('closeBtn').addEventListener('click', () => {
       if (window.musiclens) window.musiclens.closeArtistPage();
       else window.close();
     });
+
+    function renderHero(imageUrl) {
+      const heroWrap = document.getElementById('heroWrap');
+      const trackLabel = track + (album ? ` — ${album}` : '');
+
+      if (imageUrl) {
+        heroWrap.innerHTML = `
+          <div class="artist-image-wrap">
+            <img class="artist-image" src="${imageUrl}" alt="${artist}" />
+            <div class="hero-overlay">
+              <div class="artist-name">${artist.toUpperCase()}</div>
+              <div class="track-pill">
+                <div class="dot"></div>
+                <span>NOW PLAYING</span>
+                <span class="track-name">${trackLabel}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        heroWrap.innerHTML = `
+          <div class="hero">
+            <div class="artist-name">${artist.toUpperCase()}</div>
+            <div class="track-pill">
+              <div class="dot"></div>
+              <span>NOW PLAYING</span>
+              <span class="track-name">${trackLabel}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
 
     function parseProfile(text) {
       const sections = [];
@@ -244,10 +310,13 @@
         const data = await res.json();
 
         if (data.error) {
+          renderHero(null);
           document.getElementById('content').innerHTML =
             `<div class="error">// ${data.error}</div>`;
           return;
         }
+
+        renderHero(data.imageUrl || null);
 
         const sections = parseProfile(data.profile);
         const html = sections.length
@@ -260,6 +329,7 @@
 
         document.getElementById('content').innerHTML = html;
       } catch (err) {
+        renderHero(null);
         document.getElementById('content').innerHTML =
           `<div class="error">// NO SIGNAL — ${err.message}</div>`;
       }

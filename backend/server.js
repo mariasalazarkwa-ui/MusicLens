@@ -1,7 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
-const { getCurrentTrack, getRecentTracks, getSpotifyAuthUrl, exchangeCode, refreshToken } = require('./spotify');
+const { getCurrentTrack, getRecentTracks, getSpotifyAuthUrl, exchangeCode, refreshToken, searchArtistImage } = require('./spotify');
 const { getTrackInsight, getArtistProfile } = require('./anthropic');
 const { recognizeSong } = require('./audd');
 const db = require('./db');
@@ -107,8 +107,22 @@ app.get('/artist', async (req, res) => {
   const { artist, track, album } = req.query;
   if (!artist) return res.status(400).json({ error: 'artist required' });
   try {
-    const profile = await getArtistProfile({ artist, track, album });
-    res.json({ profile });
+    const profilePromise = getArtistProfile({ artist, track, album });
+
+    // Use any stored user's token to search for the artist image
+    let imagePromise = Promise.resolve(null);
+    const users = db.getUsers();
+    if (users.length > 0) {
+      const tokens = db.getTokens(users[0]);
+      if (tokens?.refresh_token) {
+        imagePromise = refreshToken(tokens.refresh_token)
+          .then(r => searchArtistImage(r.access_token, artist))
+          .catch(() => null);
+      }
+    }
+
+    const [profile, imageUrl] = await Promise.all([profilePromise, imagePromise]);
+    res.json({ profile, imageUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

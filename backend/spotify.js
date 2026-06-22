@@ -93,4 +93,14 @@ async function getRecentTracks(access_token, limit = 10) {
   }));
 }
 
-module.exports = { getSpotifyAuthUrl, exchangeCode, refreshToken, getCurrentTrack, getRecentTracks };
+async function searchArtistImage(access_token, artistName) {
+  const response = await axios.get(
+    `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`,
+    { headers: { Authorization: `Bearer ${access_token}` } }
+  );
+  const items = response.data.artists?.items;
+  if (!items || items.length === 0) return null;
+  return items[0].images?.[0]?.url || null;
+}
+
+module.exports = { getSpotifyAuthUrl, exchangeCode, refreshToken, getCurrentTrack, getRecentTracks, searchArtistImage };
