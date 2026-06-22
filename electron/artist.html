@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MusicLens — Artist</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ff2d2d44; border-radius: 2px; }
+
+    html, body {
+      height: 100%;
+      background: #0a0a0a;
+      color: #e8e8e8;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── TITLEBAR ── */
+    .titlebar {
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+      padding: 12px 16px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px;
+      color: #ff2d2d;
+      letter-spacing: 3px;
+    }
+
+    .close-btn {
+      -webkit-app-region: no-drag;
+      background: none;
+      border: none;
+      color: #333;
+      cursor: pointer;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      padding: 2px 4px;
+      transition: color 0.15s;
+    }
+    .close-btn:hover { color: #ff2d2d; }
+
+    /* ── HERO ── */
+    .hero {
+      flex-shrink: 0;
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid #111;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, #ff2d2d44, transparent);
+    }
+
+    .artist-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      color: #fff;
+      letter-spacing: 4px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .track-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #444;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .track-pill .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #ff2d2d;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .track-pill .track-name { color: #666; }
+
+    /* ── SCROLL CONTENT ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 24px 40px;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      padding: 24px 0;
+      border-bottom: 1px solid #111;
+    }
+    .section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-size: 9px;
+      color: #ff2d2d;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section-body {
+      font-size: 13px;
+      color: #bbb;
+      line-height: 1.75;
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      padding: 40px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .loading-bar {
+      height: 10px;
+      background: #111;
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .loading-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #ff2d2d22, transparent);
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+
+    .loading-bar:nth-child(2) { width: 80%; }
+    .loading-bar:nth-child(3) { width: 65%; animation-delay: 0.2s; }
+    .loading-bar:nth-child(4) { width: 90%; animation-delay: 0.4s; }
+
+    @keyframes shimmer {
+      to { left: 100%; }
+    }
+
+    .error {
+      padding: 32px 0;
+      font-size: 11px;
+      color: #ff2d2d44;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="titlebar">
+    <span class="logo">BRIT FM</span>
+    <button class="close-btn" id="closeBtn">✕</button>
+  </div>
+
+  <div class="hero">
+    <div class="artist-name" id="artistName"></div>
+    <div class="track-pill">
+      <div class="dot"></div>
+      <span>NOW PLAYING</span>
+      <span class="track-name" id="trackName"></span>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="loading">
+      <div class="loading-bar"></div>
+      <div class="loading-bar"></div>
+      <div class="loading-bar"></div>
+      <div class="loading-bar"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://musiclens-production-2d7b.up.railway.app';
+    const SECTIONS = ['WHO THEY ARE', 'THE SOUND', 'MUSIC HISTORY', 'RELEVANCE NOW'];
+
+    const params = new URLSearchParams(window.location.search);
+    const artist = params.get('artist') || 'Unknown Artist';
+    const track  = params.get('track')  || '';
+    const album  = params.get('album')  || '';
+
+    document.getElementById('artistName').textContent = artist.toUpperCase();
+    document.getElementById('trackName').textContent  = track + (album ? ` — ${album}` : '');
+
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      if (window.musiclens) window.musiclens.closeArtistPage();
+      else window.close();
+    });
+
+    function parseProfile(text) {
+      const sections = [];
+      let current = null;
+      let lines = [];
+
+      for (const line of text.split('\n')) {
+        const t = line.trim();
+        if (SECTIONS.includes(t)) {
+          if (current) sections.push({ header: current, body: lines.join('\n').trim() });
+          current = t; lines = [];
+        } else if (current) {
+          lines.push(line);
+        }
+      }
+      if (current) sections.push({ header: current, body: lines.join('\n').trim() });
+      return sections;
+    }
+
+    async function load() {
+      try {
+        const url = `${API_BASE}/artist?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}&album=${encodeURIComponent(album)}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById('content').innerHTML =
+            `<div class="error">// ${data.error}</div>`;
+          return;
+        }
+
+        const sections = parseProfile(data.profile);
+        const html = sections.length
+          ? sections.map(s => `
+              <div class="section">
+                <div class="section-label">${s.header}</div>
+                <div class="section-body">${s.body.replace(/\n\n/g, '</p><p>').replace(/\n/g, ' ')}</div>
+              </div>`).join('')
+          : `<div class="section"><div class="section-body">${data.profile}</div></div>`;
+
+        document.getElementById('content').innerHTML = html;
+      } catch (err) {
+        document.getElementById('content').innerHTML =
+          `<div class="error">// NO SIGNAL — ${err.message}</div>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
