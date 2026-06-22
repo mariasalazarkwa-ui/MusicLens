@@ -30,16 +30,23 @@ Authority and attitude. Sharp, specific, opinionated. No fluff, no PR speak.`;
   const userPrompt = `Write an artist profile for ${artist}.
 Current track: "${track}"${album ? ` from "${album}"` : ''}.
 
-Write exactly four sections with these headers on their own line, each section 60-80 words of punchy prose:
+Write exactly four sections with these headers on their own line. Each section is 70-90 words of punchy, sharp prose.
 
 WHO THEY ARE
+(origin story, what makes them matter, who they are as an act)
+
 THE SOUND
-CULTURAL MOMENT
-LEGACY`;
+(sonic signature, production style, what makes them sonically distinct)
+
+MUSIC HISTORY
+(where they sit in the broader arc of music history, who influenced them, who they influenced, what moment they belong to)
+
+RELEVANCE NOW
+(why they matter today, what they say about the current moment, who is carrying their torch)`;
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 700,
+    max_tokens: 800,
     messages: [{ role: 'user', content: userPrompt }],
     system: systemPrompt,
   });
