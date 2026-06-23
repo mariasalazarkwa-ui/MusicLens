@@ -6,60 +6,58 @@ function stripMarkdown(text) {
   return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
 }
 
-async function getTrackInsight({ track, artist, album, mode }) {
-  const systemPrompt = `You are Brit FM — someone in their mid-20s from London who's genuinely obsessed with music. You've gone deep on the history, you know your stuff, but you talk about it like you're telling a mate something interesting — not writing a review. Warm, direct, a bit enthusiastic when something's worth it. Plain sentences, no markdown formatting.`;
+const VOICE = `You are a music writer for Brit FM. You know the history deeply, you've heard everything, and you are not easily impressed. Your writing is specific and observational — you earn any praise with a precise detail rather than a general superlative. If something is genuinely great, say so in one clear sentence and move on. If something is solid but overhyped, you can say that. If it's just fine, say it's fine. You do not use words like groundbreaking, iconic, visionary, revolutionary, essential, or timeless unless you can back them up with a specific reason in the same sentence. No AI optimism. No cheerleading. Plain sentences, no markdown formatting.`;
 
+async function getTrackInsight({ track, artist, album, mode }) {
   let userPrompt;
   if (mode === 'more') {
-    userPrompt = `Tell me more about ${artist} — what scene were they part of, who shaped them, who have they shaped? What was going on when "${track}" came out, culturally? Give me the bigger picture — lineage, context, what it all means. Under 130 words.`;
+    userPrompt = `Tell me more about ${artist} — what scene were they part of, who shaped them, who have they shaped? What was going on culturally when "${track}" came out? Give me the lineage and context, not a sales pitch. Under 130 words.`;
   } else {
-    userPrompt = `Who is ${artist}? Tell me where they're from, roughly when they started, who their main influences were, and what makes their sound theirs. Only bring up "${track}"${album ? ` or "${album}"` : ''} if it actually helps explain them. Under 110 words.`;
+    userPrompt = `Who is ${artist}? Where are they from, roughly when did they start, who were their main influences, and what makes their sound theirs — for better or worse. Only mention "${track}"${album ? ` or "${album}"` : ''} if it genuinely helps explain them. Under 110 words.`;
   }
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 256,
     messages: [{ role: 'user', content: userPrompt }],
-    system: systemPrompt,
+    system: VOICE,
   });
 
   return stripMarkdown(message.content[0].text);
 }
 
 async function getArtistProfile({ artist, track, album }) {
-  const systemPrompt = `You are Brit FM — someone in their mid-20s from London who loves music and knows the history inside out. You write about it like you'd explain it to a friend who's curious — enthusiastic, knowledgeable, but not showing off. Direct and warm. No markdown formatting, no bullet points, just plain prose.`;
-
   const userPrompt = `Write an artist profile for ${artist}.
 Current track: "${track}"${album ? ` from "${album}"` : ''}.
 
-Write exactly seven sections with these exact headers on their own line.
+Write exactly seven sections with these exact headers on their own line. Be specific and observational. Do not oversell. If they're brilliant, say exactly why in concrete terms. If they're divisive or flawed, say that too.
 
 WHO THEY ARE
-(70-90 words: origin, when they started, what makes them matter, who they are as an act)
+(70-90 words: origin, when they started, what kind of act they are — honestly, not as a press release)
 
 THE SOUND
-(70-90 words: sonic signature, production style, what makes them sonically distinct, key influences)
+(70-90 words: what they actually sound like, who influenced them, what is distinct or derivative about it)
 
 MUSIC HISTORY
-(70-90 words: where they sit in the arc of music history, who influenced them, who they influenced)
+(70-90 words: where they fit in the arc of music history — not where they'd like to fit, where they actually do)
 
 RELEVANCE NOW
-(70-90 words: why they still matter, what they say about the current moment, who carries their torch)
+(70-90 words: what they mean right now — are they still vital, coasting, influential, or a reference point? Be honest)
 
 ESSENTIAL LISTENING
-(list exactly 3 essential records or tracks, one per line, format: Title (Year) — one sentence on why it matters)
+(exactly 3 records or tracks, one per line, format: Title (Year) — one sentence on what it tells you about them)
 
 IF YOU LIKE THIS
-(list exactly 3 similar artists, one per line, format: Artist Name — one sentence on the connection)
+(exactly 3 artists, one per line, format: Artist Name — one sentence on the actual connection)
 
 PULL QUOTE
-(one real quote from or about the artist that captures their essence, format: "the quote" — Name, Year)`;
+(one real, attributed quote from or about the artist — something that captures how they actually think or are seen, format: "quote" — Name, Year)`;
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1400,
     messages: [{ role: 'user', content: userPrompt }],
-    system: systemPrompt,
+    system: VOICE,
   });
 
   return stripMarkdown(message.content[0].text);
