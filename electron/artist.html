@@ -178,6 +178,46 @@
       line-height: 1.75;
     }
 
+    /* list sections: ESSENTIAL LISTENING, IF YOU LIKE THIS */
+    .section-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-list li {
+      font-size: 13px;
+      color: #bbb;
+      line-height: 1.6;
+      padding-left: 12px;
+      border-left: 2px solid #222;
+    }
+
+    .section-list li strong {
+      color: #e8e8e8;
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    /* pull quote */
+    .pull-quote {
+      font-size: 15px;
+      color: #e8e8e8;
+      line-height: 1.7;
+      font-style: italic;
+      padding-left: 16px;
+      border-left: 2px solid #ff2d2d;
+    }
+
+    .pull-quote-attr {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #444;
+      letter-spacing: 1px;
+      font-style: normal;
+    }
+
     /* ── LOADING ── */
     .loading {
       padding: 40px 0;
@@ -241,7 +281,8 @@
 
   <script>
     const API_BASE = 'https://musiclens-production-2d7b.up.railway.app';
-    const SECTIONS = ['WHO THEY ARE', 'THE SOUND', 'MUSIC HISTORY', 'RELEVANCE NOW'];
+    const SECTIONS = ['WHO THEY ARE', 'THE SOUND', 'MUSIC HISTORY', 'RELEVANCE NOW', 'ESSENTIAL LISTENING', 'IF YOU LIKE THIS', 'PULL QUOTE'];
+    const LIST_SECTIONS = new Set(['ESSENTIAL LISTENING', 'IF YOU LIKE THIS']);
 
     const params = new URLSearchParams(window.location.search);
     const artist = params.get('artist') || 'Unknown Artist';
@@ -303,6 +344,43 @@
       return sections;
     }
 
+    function renderSection(s) {
+      if (s.header === 'PULL QUOTE') {
+        const lines = s.body.split('\n').map(l => l.trim()).filter(Boolean);
+        const quoteLine = lines[0] || '';
+        const attrLine = lines[1] || '';
+        const quoteText = quoteLine.replace(/^[""]|[""]$/g, '');
+        return `
+          <div class="section">
+            <div class="section-label">${s.header}</div>
+            <div class="pull-quote">"${quoteText}"</div>
+            ${attrLine ? `<div class="pull-quote-attr">— ${attrLine.replace(/^—\s*/, '')}</div>` : ''}
+          </div>`;
+      }
+
+      if (LIST_SECTIONS.has(s.header)) {
+        const items = s.body.split('\n').map(l => l.trim()).filter(Boolean);
+        const listHtml = items.map(item => {
+          const dash = item.indexOf(' — ');
+          if (dash === -1) return `<li>${item}</li>`;
+          const title = item.slice(0, dash);
+          const desc  = item.slice(dash + 3);
+          return `<li><strong>${title}</strong>${desc}</li>`;
+        }).join('');
+        return `
+          <div class="section">
+            <div class="section-label">${s.header}</div>
+            <ul class="section-list">${listHtml}</ul>
+          </div>`;
+      }
+
+      return `
+        <div class="section">
+          <div class="section-label">${s.header}</div>
+          <div class="section-body">${s.body.replace(/\n\n/g, '</p><p>').replace(/\n/g, ' ')}</div>
+        </div>`;
+    }
+
     async function load() {
       try {
         const url = `${API_BASE}/artist?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}&album=${encodeURIComponent(album)}`;
@@ -320,11 +398,7 @@
 
         const sections = parseProfile(data.profile);
         const html = sections.length
-          ? sections.map(s => `
-              <div class="section">
-                <div class="section-label">${s.header}</div>
-                <div class="section-body">${s.body.replace(/\n\n/g, '</p><p>').replace(/\n/g, ' ')}</div>
-              </div>`).join('')
+          ? sections.map(s => renderSection(s)).join('')
           : `<div class="section"><div class="section-body">${data.profile}</div></div>`;
 
         document.getElementById('content').innerHTML = html;

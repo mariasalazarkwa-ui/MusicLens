@@ -32,23 +32,32 @@ async function getArtistProfile({ artist, track, album }) {
   const userPrompt = `Write an artist profile for ${artist}.
 Current track: "${track}"${album ? ` from "${album}"` : ''}.
 
-Write exactly four sections with these headers on their own line. Each section is 70-90 words of natural, clear prose.
+Write exactly seven sections with these exact headers on their own line.
 
 WHO THEY ARE
-(origin, when they started, what makes them matter, who they are as an act)
+(70-90 words: origin, when they started, what makes them matter, who they are as an act)
 
 THE SOUND
-(sonic signature, production style, what makes them sonically distinct, key influences on their sound)
+(70-90 words: sonic signature, production style, what makes them sonically distinct, key influences)
 
 MUSIC HISTORY
-(where they sit in the broader arc of music history, who influenced them, who they influenced, what moment they belong to)
+(70-90 words: where they sit in the arc of music history, who influenced them, who they influenced)
 
 RELEVANCE NOW
-(why they still matter today, what they say about the current moment, who is carrying their torch)`;
+(70-90 words: why they still matter, what they say about the current moment, who carries their torch)
+
+ESSENTIAL LISTENING
+(list exactly 3 essential records or tracks, one per line, format: Title (Year) — one sentence on why it matters)
+
+IF YOU LIKE THIS
+(list exactly 3 similar artists, one per line, format: Artist Name — one sentence on the connection)
+
+PULL QUOTE
+(one real quote from or about the artist that captures their essence, format: "the quote" — Name, Year)`;
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 800,
+    max_tokens: 1400,
     messages: [{ role: 'user', content: userPrompt }],
     system: systemPrompt,
   });
